@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile_optimized
+    image: myapi:1
+    ports:
+      - "80:8080"
+    environment:
+      - MONGO_URL=mongodb://root:example@mongo:27017/
+    networks:
+      - db_net
+
+networks:
+  db_net:
+    external: true
+
