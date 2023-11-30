@@ -53,6 +53,8 @@ func main() {
 
 	r.POST(baseURL+"/addUserToDB", addUserToDB)
 
+	r.DELETE(baseURL+"/deleteUser/:username", deleteUserFromDB)
+
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 
 }
@@ -166,3 +168,24 @@ func getUsersFromDB(c *gin.Context) {
     c.JSON(http.StatusOK, users)
 }
 
+func deleteUserFromDB(c *gin.Context) {
+    // Get the username from the URL parameter
+    username := c.Param("username")
+
+    collection := client.Database("mydatabase").Collection("users")
+
+    // Create a filter to match the user by username
+    filter := bson.M{"username": username}
+
+    // Delete the user from the database
+    _, err := collection.DeleteOne(context.TODO(), filter)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    // Print to the terminal
+    log.Printf("User deleted successfully: Username: %s\n", username)
+
+    c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+}
