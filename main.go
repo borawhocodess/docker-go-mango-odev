@@ -95,17 +95,35 @@ func addUserToDB(c *gin.Context) {
     }
 
     collection := client.Database("mydatabase").Collection("users")
-    _, err := collection.InsertOne(context.TODO(), newUser)
+
+    // Check if a user with the same username or ID already exists
+    var existingUser User
+    err := collection.FindOne(context.TODO(), bson.M{
+        "$or": []bson.M{
+            {"username": newUser.Username},
+            {"id": newUser.Id},
+        },
+    }).Decode(&existingUser)
+
+    if err == nil {
+        c.JSON(http.StatusConflict, gin.H{"error": "User with the same username or ID already exists"})
+        return
+    } else if err != mongo.ErrNoDocuments {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    // Insert the new user
+    _, err = collection.InsertOne(context.TODO(), newUser)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return
     }
 
-    // Print to the terminal
-    log.Printf("\n\n\n\nUser added successfully: Username: %s, ID: %d\n\n\n\n", newUser.Username, newUser.Id)
-
+    log.Printf("User added successfully: Username: %s, ID: %d\n", newUser.Username, newUser.Id)
     c.JSON(http.StatusOK, gin.H{"message": "User added successfully"})
 }
+
 
 func getUsersFromDB(c *gin.Context) {
     var users []User
